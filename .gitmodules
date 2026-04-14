@@ -1,0 +1,6 @@
+[submodule "third_party/verilator"]
+	path = third_party/verilator
+	url = https://github.com/verilator/verilator.git
+[submodule "third_party/cocotb"]
+	path = third_party/cocotb
+	url = https://github.com/cocotb/cocotb.git

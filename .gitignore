@@ -1,0 +1,15 @@
+.venv/
+local/
+wheelhouse/
+downloads/
+build/
+dist/
+*.log
+*.tar.gz
+*.tar.xz
+examples/**/sim_build/
+examples/**/tests/results.xml
+examples/**/tests/dump.vcd
+examples/**/tests/ucli.key
+__pycache__/
+*.pyc
