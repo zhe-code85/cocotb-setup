@@ -17,8 +17,18 @@ fi
 echo "using python: $(command -v python)"
 python -V
 
-python -m ensurepip --upgrade
-python -m pip install --upgrade pip setuptools wheel
+WHEELHOUSE_DIR="${WHEELHOUSE_DIR:-${ROOT_DIR}/wheelhouse}"
+
+python -m ensurepip --upgrade --default-pip
+
+# Upgrade pip/setuptools/wheel: use wheelhouse if available, otherwise network
+if [[ -d "${WHEELHOUSE_DIR}" ]] && find "${WHEELHOUSE_DIR}" -name '*.whl' -print -quit | grep -q .; then
+  echo "installing pip/setuptools/wheel from local wheelhouse (offline)"
+  python -m pip install --no-index --find-links "${WHEELHOUSE_DIR}" \
+    pip setuptools wheel
+else
+  python -m pip install --upgrade pip setuptools wheel
+fi
 
 PYTHON_BIN=python "${ROOT_DIR}/scripts/check_python.sh"
 "${ROOT_DIR}/scripts/build_verilator.sh"

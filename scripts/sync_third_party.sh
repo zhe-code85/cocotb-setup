@@ -9,14 +9,32 @@ COCOTB_PATH="${COCOTB_PATH:-${ROOT_DIR}/third_party/cocotb}"
 VERILATOR_TAG="${VERILATOR_TAG:-v5.046}"
 COCOTB_TAG="${COCOTB_TAG:-v2.0.1}"
 
+# Check if a submodule is properly initialized by looking for a .git file/link
+# that points into the parent's .git/modules/ directory (not the parent repo itself).
+is_submodule_initialized() {
+  local repo_path="$1"
+  local gitdir
+
+  if [[ ! -f "${repo_path}/.git" ]] && [[ ! -d "${repo_path}/.git" ]]; then
+    return 1
+  fi
+
+  gitdir="$(cd "${repo_path}" && git rev-parse --git-dir 2>/dev/null || true)"
+  # An initialized submodule's gitdir contains "modules/" in the path
+  if [[ "${gitdir}" == *"/modules/"* ]]; then
+    return 0
+  fi
+  return 1
+}
+
 sync_repo() {
   local repo_path="$1"
   local repo_name="$2"
   local target_ref="$3"
 
-  if ! git -C "${repo_path}" rev-parse --git-dir >/dev/null 2>&1; then
-    echo "error: ${repo_name} repository not found at ${repo_path}"
-    echo "hint: run 'git submodule update --init --recursive' first, or place the source tree there"
+  if ! is_submodule_initialized "${repo_path}"; then
+    echo "warning: ${repo_name} submodule not initialized at ${repo_path}"
+    echo "run 'git submodule update --init --recursive' from the repository root first"
     exit 1
   fi
 

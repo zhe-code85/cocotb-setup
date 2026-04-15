@@ -10,10 +10,20 @@ if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
   exit 1
 fi
 
+WHEELHOUSE_DIR="${WHEELHOUSE_DIR:-${ROOT_DIR}/wheelhouse}"
+
 echo "creating virtual environment at ${VENV_DIR}"
 "${PYTHON_BIN}" -m venv "${VENV_DIR}"
 
-"${VENV_DIR}/bin/python" -m ensurepip --upgrade
-"${VENV_DIR}/bin/python" -m pip install --upgrade pip setuptools wheel
+"${VENV_DIR}/bin/python" -m ensurepip --upgrade --default-pip
+
+# Upgrade pip/setuptools/wheel: use wheelhouse if available, otherwise network
+if [[ -d "${WHEELHOUSE_DIR}" ]] && find "${WHEELHOUSE_DIR}" -name '*.whl' -print -quit | grep -q .; then
+  echo "installing pip/setuptools/wheel from local wheelhouse (offline)"
+  "${VENV_DIR}/bin/python" -m pip install --no-index --find-links "${WHEELHOUSE_DIR}" \
+    pip setuptools wheel
+else
+  "${VENV_DIR}/bin/python" -m pip install --upgrade pip setuptools wheel
+fi
 
 echo "virtual environment ready: ${VENV_DIR}"
