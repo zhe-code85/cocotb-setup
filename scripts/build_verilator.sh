@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERILATOR_SRC_DIR="${VERILATOR_SRC_DIR:-${ROOT_DIR}/third_party/verilator}"
 VERILATOR_PREFIX="${VERILATOR_PREFIX:-${ROOT_DIR}/local/verilator}"
+VERILATOR_BUILD_DIR="${VERILATOR_BUILD_DIR:-${ROOT_DIR}/build/verilator}"
 JOBS="${JOBS:-$(nproc)}"
 REQUIRED_TOOLS=(autoconf bison flex g++ make perl)
 
@@ -24,25 +25,27 @@ for tool in "${REQUIRED_TOOLS[@]}"; do
   fi
 done
 
-mkdir -p "${VERILATOR_PREFIX}"
-
-pushd "${VERILATOR_SRC_DIR}" >/dev/null
-
-if [[ -f "autogen.sh" ]]; then
+# Generate configure script in source tree (does not produce .o files)
+if [[ -f "${VERILATOR_SRC_DIR}/autogen.sh" ]]; then
+  pushd "${VERILATOR_SRC_DIR}" >/dev/null
   ./autogen.sh
-elif [[ ! -f "configure" ]]; then
+  popd >/dev/null
+elif [[ ! -f "${VERILATOR_SRC_DIR}/configure" ]]; then
+  pushd "${VERILATOR_SRC_DIR}" >/dev/null
   autoconf
+  popd >/dev/null
 fi
 
-./configure --prefix="${VERILATOR_PREFIX}"
-if command -v help2man >/dev/null 2>&1; then
-  make -j"${JOBS}"
-  make install
-else
-  echo "warning: help2man not found; installing Verilator without man pages"
-  make -j"${JOBS}" verilator_exe
-  make installbin installredirect installdata
-fi
+# Build in a separate directory to keep source tree clean
+mkdir -p "${VERILATOR_BUILD_DIR}"
+
+pushd "${VERILATOR_BUILD_DIR}" >/dev/null
+
+"${VERILATOR_SRC_DIR}/configure" --prefix="${VERILATOR_PREFIX}"
+make -j"${JOBS}"
+# Out-of-source build breaks man page install paths; install components separately
+make installbin installredirect installdata
+echo "note: man pages skipped (out-of-source build)"
 
 popd >/dev/null
 
